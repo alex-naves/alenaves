@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solucionática · Relógio de Estúdio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cyan: #00f6ff;
+      --cyan-dim: rgba(0, 246, 255, 0.18);
+      --magenta: #ff2bd6;
+      --amber: #ffb020;
+      --red: #ff3355;
+      --bg: #04070f;
+      --panel: rgba(6, 14, 28, 0.72);
+      --text: #e8fbff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Share Tech Mono", monospace;
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+    }
+
+    .space {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(1200px 700px at 50% -10%, rgba(0, 246, 255, 0.12), transparent 55%),
+        radial-gradient(900px 600px at 110% 110%, rgba(255, 43, 214, 0.14), transparent 50%),
+        radial-gradient(700px 500px at -10% 80%, rgba(0, 90, 255, 0.16), transparent 50%),
+        #04070f;
+    }
+
+    .grid {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        linear-gradient(rgba(0, 246, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 246, 255, 0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 78%);
+      animation: drift 18s linear infinite;
+    }
+
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 8;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 2px,
+        rgba(0, 0, 0, 0.12) 3px
+      );
+      opacity: 0.35;
+    }
+
+    @keyframes drift {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 0 48px, 48px 0; }
+    }
+
+    .stage {
+      width: min(920px, 94vw);
+      padding: 28px 28px 32px;
+      border: 1px solid var(--cyan-dim);
+      background: var(--panel);
+      box-shadow:
+        0 0 0 1px rgba(255, 43, 214, 0.12) inset,
+        0 0 80px rgba(0, 246, 255, 0.08),
+        0 30px 80px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(16px);
+      position: relative;
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--cyan);
+    }
+
+    .stage::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+    .stage::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .brand {
+      letter-spacing: 0.42em;
+      font-size: 13px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(0, 246, 255, 0.7);
+    }
+
+    .brand strong {
+      font-family: Orbitron, sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 0.18em;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: rgba(232, 251, 255, 0.62);
+      letter-spacing: 0.16em;
+      text-align: right;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 14px 0 22px;
+      font-size: 12px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(0, 246, 255, 0.72);
+    }
+
+    .pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+
+    body.running .dot { background: #35ff9a; box-shadow: 0 0 12px #35ff9a; }
+    body.paused .dot { background: var(--amber); box-shadow: 0 0 12px var(--amber); animation: none; }
+    body.warn .dot { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
+    body.done .dot { background: var(--magenta); box-shadow: 0 0 14px var(--magenta); animation: none; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    .dial-wrap {
+      display: grid;
+      place-items: center;
+      position: relative;
+      margin: 8px auto 18px;
+      width: min(420px, 78vw);
+      height: min(420px, 78vw);
+    }
+
+    svg.ring {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 12px rgba(0, 246, 255, 0.45));
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: rgba(0, 246, 255, 0.12);
+      stroke-width: 10;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: url(#neon);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 1006.19;
+      stroke-dashoffset: 0;
+      transition: stroke 0.2s linear;
+    }
+
+    body.warn .ring-progress { stroke: var(--amber); }
+    body.done .ring-progress { stroke: var(--magenta); }
+
+    .digits {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Orbitron, sans-serif;
+      pointer-events: none;
+    }
+
+    .time {
+      font-size: clamp(64px, 14vw, 108px);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-shadow:
+        0 0 18px rgba(0, 246, 255, 0.85),
+        0 0 42px rgba(0, 246, 255, 0.35);
+    }
+
+    .unit {
+      margin-top: 6px;
+      font-size: 13px;
+      letter-spacing: 0.5em;
+      color: rgba(232, 251, 255, 0.7);
+    }
+
+    body.warn .time {
+      color: var(--amber);
+      text-shadow: 0 0 22px rgba(255, 176, 32, 0.9);
+      animation: tick 1s steps(1) infinite;
+    }
+
+    body.done .time {
+      color: var(--magenta);
+      text-shadow: 0 0 28px rgba(255, 43, 214, 0.95);
+      animation: flash 0.18s steps(2) 8;
+    }
+
+    @keyframes tick {
+      50% { opacity: 0.55; }
+    }
+
+    @keyframes flash {
+      50% { opacity: 0.2; }
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(0, 246, 255, 0.45);
+      background: linear-gradient(180deg, rgba(0, 246, 255, 0.16), rgba(0, 246, 255, 0.04));
+      color: var(--cyan);
+      font-family: Orbitron, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      padding: 14px 26px;
+      min-width: 160px;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 22px rgba(0, 246, 255, 0.28);
+    }
+
+    button:active { transform: translateY(1px); }
+
+    button.ghost {
+      border-color: rgba(255, 43, 214, 0.45);
+      color: #ff9ae8;
+      background: linear-gradient(180deg, rgba(255, 43, 214, 0.16), rgba(255, 43, 214, 0.04));
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .hints {
+      margin-top: 22px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: rgba(232, 251, 255, 0.45);
+    }
+
+    kbd {
+      display: inline-block;
+      border: 1px solid rgba(0, 246, 255, 0.28);
+      padding: 2px 7px;
+      margin: 0 2px;
+      color: var(--cyan);
+    }
+
+    .flash-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(255, 43, 214, 0.28), transparent 60%);
+      opacity: 0;
+      z-index: 6;
+    }
+
+    body.done .flash-overlay { animation: burst 0.9s ease-out; }
+
+    @keyframes burst {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="space"></div>
+  <div class="grid"></div>
+  <div class="scanlines"></div>
+  <div class="flash-overlay" aria-hidden="true"></div>
+
+  <main class="stage">
+    <header class="header">
+      <div class="brand">
+        <strong>Solucionática</strong>
+        <div>Estúdio · Controle de tempo</div>
+      </div>
+      <div class="meta">
+        TAKE · 10.00s<br />
+        HUD-01 / SYNC
+      </div>
+    </header>
+
+    <div class="status-row">
+      <span class="pulse"><span class="dot"></span> <span id="stateLabel">PRONTO</span></span>
+      <span>CRONÔMETRO DIGITAL</span>
+    </div>
+
+    <div class="dial-wrap" aria-live="polite">
+      <svg class="ring" viewBox="0 0 360 360" aria-hidden="true">
+        <defs>
+          <linearGradient id="neon" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00f6ff" />
+            <stop offset="55%" stop-color="#35ff9a" />
+            <stop offset="100%" stop-color="#ff2bd6" />
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="180" cy="180" r="160" />
+        <circle class="ring-progress" id="progress" cx="180" cy="180" r="160" />
+      </svg>
+      <div class="digits">
+        <div class="time" id="time">10.00</div>
+        <div class="unit">SEGUNDOS</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" type="button">Iniciar</button>
+      <button id="resetBtn" class="ghost" type="button">Reiniciar</button>
+    </div>
+    <p class="hints">
+      <kbd>Espaço</kbd> inicia / pausa
+      · <kbd>R</kbd> reinicia
+      · duração fixa de 10 segundos
+    </p>
+  </main>
+
+  <script>
+    const DURATION_MS = 10000;
+    const CIRCUMFERENCE = 2 * Math.PI * 160;
+
+    const timeEl = document.getElementById("time");
+    const progressEl = document.getElementById("progress");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const stateLabel = document.getElementById("stateLabel");
+
+    let remaining = DURATION_MS;
+    let running = false;
+    let ended = false;
+    let lastTs = 0;
+    let rafId = 0;
+    let audioCtx = null;
+
+    progressEl.style.strokeDasharray = String(CIRCUMFERENCE);
+    progressEl.style.strokeDashoffset = "0";
+
+    function format(ms) {
+      const clamped = Math.max(0, ms);
+      const seconds = clamped / 1000;
+      return seconds.toFixed(2).padStart(5, "0");
+    }
+
+    function setMode(mode) {
+      document.body.classList.remove("running", "warn", "done");
+      if (mode) document.body.classList.add(mode);
+      const labels = {
+        running: "GRAVANDO",
+        warn: "FINAL · 3s",
+        done: "TEMPO ESGOTADO",
+        paused: "PAUSADO",
+      };
+      stateLabel.textContent = labels[mode] || "PRONTO";
+    }
+
+    function render() {
+      timeEl.textContent = format(remaining);
+      const ratio = remaining / DURATION_MS;
+      progressEl.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - ratio));
+    }
+
+    function beep(freq, dur, type, gainValue) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.value = gainValue;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+        osc.stop(audioCtx.currentTime + dur);
+      } catch (_) {
+        /* áudio opcional */
+      }
+    }
+
+    function tickCue(ms) {
+      if (ms <= 3000 && ms > 0) {
+        const whole = Math.ceil(ms / 1000);
+        const prev = Math.ceil((ms + 16) / 1000);
+        if (whole !== prev) beep(880, 0.08, "square", 0.05);
+      }
+    }
+
+    function finish() {
+      remaining = 0;
+      running = false;
+      ended = true;
+      cancelAnimationFrame(rafId);
+      startBtn.textContent = "Iniciar";
+      startBtn.disabled = true;
+      setMode("done");
+      render();
+      beep(220, 0.45, "sawtooth", 0.08);
+      setTimeout(() => beep(110, 0.55, "sawtooth", 0.07), 160);
+    }
+
+    function frame(ts) {
+      if (!running) return;
+      const delta = ts - lastTs;
+      lastTs = ts;
+      remaining -= delta;
+      if (remaining <= 0) {
+        finish();
+        return;
+      }
+      if (remaining <= 3000) setMode("warn");
+      tickCue(remaining);
+      render();
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      if (ended || running) return;
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      running = true;
+      lastTs = performance.now();
+      startBtn.textContent = "Pausar";
+      setMode(remaining <= 3000 ? "warn" : "running");
+      beep(1320, 0.07, "triangle", 0.05);
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function pause() {
+      if (!running) return;
+      running = false;
+      cancelAnimationFrame(rafId);
+      startBtn.textContent = "Continuar";
+      setMode("paused");
+    }
+
+    function reset() {
+      running = false;
+      ended = false;
+      remaining = DURATION_MS;
+      cancelAnimationFrame(rafId);
+      startBtn.textContent = "Iniciar";
+      startBtn.disabled = false;
+      setMode("");
+      render();
+    }
+
+    startBtn.addEventListener("click", () => {
+      if (running) pause();
+      else start();
+    });
+
+    resetBtn.addEventListener("click", reset);
+
+    window.addEventListener("keydown", (event) => {
+      if (event.target && /input|textarea|button/i.test(event.target.tagName)) return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        if (ended) return;
+        if (running) pause();
+        else start();
+      }
+      if (event.key === "r" || event.key === "R") {
+        event.preventDefault();
+        reset();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
